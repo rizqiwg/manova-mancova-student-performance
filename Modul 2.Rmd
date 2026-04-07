@@ -1,0 +1,93 @@
+---
+title: "Implementasi MANOVA dan MANCOVA pada Performa Akademik Siswa Berdasarkan Dukungan Sekolah dan Keinginan Melanjutkan Pendidikan Tinggi"
+author: "Lintang Isa Mardani (24031554104) - Ivan Cahya Aryasuta (24031554172) - Rizqi Wahyu Gusniadi (24031554203)"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+### Load Library dan Data
+```{r}
+library(tidyverse)
+library(MVN)
+library(biotools)
+library(car)
+library(rstatix)
+
+data <- read.csv("student-mat.csv", sep = ";")
+```
+
+### Pemilihan Variabel
+```{r}
+data <- data %>%
+  select(G1, G3, schoolsup, higher, studytime)
+
+data$schoolsup <- as.factor(data$schoolsup)
+data$higher    <- as.factor(data$higher)
+```
+
+### Deskripsi Data
+```{r}
+summary(data)
+
+pairs(data[, c("G1","G3","studytime")])
+```
+
+### Preprocessing Data
+```{r}
+sum(is.na(data))
+
+data$studytime <- scale(data$studytime)
+```
+
+### Uji Asumsi
+##### Normalitas Multivariat (Mardia)
+```{r}
+MVN::mvn(data[, c("G1","G3")], mvn_test = "mardia")
+```
+
+##### Homogenitas Kovarians (Box's M)
+```{r}
+boxM(data[, c("G1","G3")], data$schoolsup)
+boxM(data[, c("G1","G3")], data$higher)
+```
+
+##### Dependensi Antar Variabel Dependen (Korelasi)
+```{r}
+cor.test(data$G1, data$G3)
+```
+
+##### Homogeneity of Regression Slope
+```{r}
+model_slope <- lm(G3 ~ studytime * schoolsup * higher, data = data)
+anova(model_slope)
+```
+
+### MANOVA
+```{r}
+manova_model <- manova(cbind(G1, G3) ~ schoolsup * higher, data = data)
+summary(manova_model, test = "Pillai")
+```
+
+### MANCOVA
+```{r}
+mancova_model <- manova(cbind(G1, G3) ~ schoolsup * higher + studytime, data = data)
+summary(mancova_model, test = "Pillai")
+```
+
+### ANOVA
+```{r}
+summary.aov(manova_model)
+```
+
+### ANCOVA
+```{r}
+ancova_model <- aov(G3 ~ schoolsup * higher + studytime, data = data)
+summary(ancova_model)
+```
+
+### Post-Hoc Tukey
+```{r}
+TukeyHSD(aov(G3 ~ schoolsup, data = data))
+TukeyHSD(aov(G3 ~ higher, data = data))
+```
+
