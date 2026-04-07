@@ -57,6 +57,7 @@ This repository includes:
 
 * R Markdown file (.Rmd)
 * HTML output
+* student-mat.csv
 
 ## Author
 
